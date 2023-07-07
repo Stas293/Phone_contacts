@@ -23,8 +23,8 @@ application:
     header: Authorization
     prefix: Bearer
   validation:
-    phone-api-key: 17fd366cc6eae2147d7fa39162f568dd
-    email-api-key: ae1a4f20f385e3a86f3a96d102715244
+    phone-api-key:
+    email-api-key:
 springdoc:
   swagger-ui:
     path: /swagger-ui

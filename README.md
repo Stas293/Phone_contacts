@@ -4,6 +4,7 @@
 This is a simple phone contacts application that allows you to add, edit, delete and search for contacts.
 
 When you first start the application, the database is created and filled with roles, so you can immediately register a new user.
+Don't forget to set the application.validation properties in the application.yaml file.
 
 ## Features
 - Add contact
