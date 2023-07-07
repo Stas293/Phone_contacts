@@ -6,6 +6,9 @@ This is a simple phone contacts application that allows you to add, edit, delete
 When you first start the application, the database is created and filled with roles, so you can immediately register a new user.
 Don't forget to set the application.validation properties in the application.yaml file.
 
+Please don't delete any of the docker files. compose.yml file is used with spring-boot-docker-compose to start the container with the database.
+docker-compose.yml file is used to start the container with the application and the database.
+
 ## Features
 - Add contact
 - Edit contact
