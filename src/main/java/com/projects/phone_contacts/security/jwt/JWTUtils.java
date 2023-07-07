@@ -1,11 +1,14 @@
-package com.projects.phone_contacts.jwt;
+package com.projects.phone_contacts.security.jwt;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.projects.phone_contacts.model.User;
+import com.projects.phone_contacts.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -16,15 +19,10 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class JWTUtils {
-
-    private final String SECRET;
-    private static final String HEADER = "Authorization";
-    private static final String PREFIX = "Bearer ";
-
-    public JWTUtils(@Value("${jwt.secret}") String secret) {
-        SECRET = getBase64EncodedSecretKey(secret);
-    }
+    private final JwtConfig jwtConfig;
 
     public String generateToken(String login, Collection<? extends GrantedAuthority> authorities) {
         List<String> roles = getRolesList(authorities);
@@ -35,27 +33,27 @@ public class JWTUtils {
                 .withIssuer("Phone Contacts")
                 .withClaim("authorities", roles)
                 .withIssuedAt(new Date(System.currentTimeMillis()))
-                .withExpiresAt(new Date(System.currentTimeMillis() + 600000))
-                .sign(Algorithm.HMAC256(SECRET));
-        return PREFIX + token;
+                .withExpiresAt(new Date(System.currentTimeMillis() + jwtConfig.expiration()))
+                .sign(Algorithm.HMAC256(jwtConfig.secret()));
+        return jwtConfig.prefix() + token;
     }
 
-    private static List<String> getRolesList(Collection<? extends GrantedAuthority> authorities) {
+    private List<String> getRolesList(Collection<? extends GrantedAuthority> authorities) {
         return authorities.stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
     }
 
     public DecodedJWT validateToken(String token) {
-        JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(SECRET))
-                .withJWTId("myJWT")
-                .withIssuer("Spring Musical Store")
+        JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(jwtConfig.secret()))
+                .withJWTId("ContactsJWT")
+                .withIssuer("Phone Contacts")
                 .build();
 
         return jwtVerifier.verify(token);
     }
 
-    private String getBase64EncodedSecretKey(String secret) {
+    public static String getBase64EncodedSecretKey(String secret) {
         return Base64.getEncoder().encodeToString(secret.getBytes());
     }
 
@@ -67,7 +65,7 @@ public class JWTUtils {
     }
 
     public Authentication getAuthentication(DecodedJWT jwt) {
-        UserDetails userDetails = new UserPrincipal(new User(getLogin(jwt)));
+        UserDetails userDetails = new UserPrincipal(User.builder().username(getLogin(jwt)).build());
         return new UsernamePasswordAuthenticationToken(
                 userDetails,
                 userDetails.getPassword(),
@@ -79,8 +77,8 @@ public class JWTUtils {
     }
 
     public String getJwt(HttpServletRequest request) {
-        String header = request.getHeader(HEADER);
-        if (header != null && header.startsWith(PREFIX)) {
+        String header = request.getHeader(jwtConfig.header());
+        if (header != null && header.startsWith(jwtConfig.prefix())) {
             return header.substring(7);
         }
         return "no jwt";

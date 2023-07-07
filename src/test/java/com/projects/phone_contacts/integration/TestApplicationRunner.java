@@ -1,4 +1,4 @@
-package com.course.springstart.integration;
+package com.projects.phone_contacts.integration;
 
 import org.springframework.boot.test.context.TestConfiguration;
 

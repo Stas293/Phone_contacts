@@ -1,1 +1,31 @@
-
+spring:
+  datasource:
+    password: secret
+    url: jdbc:postgresql://postgres:5432/contacts
+    username: superuser
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        batch_size: 100
+        fetch_size: 100
+        format_sql: true
+        use_sql_comments: true
+        use_reflection_optimizer: true
+        generate_statistics: true
+application:
+  jwt:
+    expiration: 86400000
+    secret: secret
+    header: Authorization
+    prefix: Bearer
+  validation:
+    phone-api-key: 17fd366cc6eae2147d7fa39162f568dd
+    email-api-key: ae1a4f20f385e3a86f3a96d102715244
+springdoc:
+  swagger-ui:
+    path: /swagger-ui
+    enabled: true

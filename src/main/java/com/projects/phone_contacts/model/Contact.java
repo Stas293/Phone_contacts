@@ -11,13 +11,9 @@ import java.util.Objects;
 @Getter
 @Setter
 @Entity
-@Table(uniqueConstraints = {
-        @UniqueConstraint(name = "uc_contact_name", columnNames = {"firstName", "middleName", "lastName"})
-})
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class Contacts {
+public class Contact {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -29,15 +25,15 @@ public class Contacts {
     private String lastName;
 
     @OneToMany(fetch = FetchType.LAZY,
-            mappedBy = "contact",
             cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @ToString.Exclude
+    @JoinColumn(name = "contact_id")
     private List<Email> emails;
 
     @OneToMany(fetch = FetchType.LAZY,
-            mappedBy = "contact",
             cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @ToString.Exclude
+    @JoinColumn(name = "contact_id")
     private List<Phone> phones;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -57,7 +53,7 @@ public class Contacts {
                 hibernateProxy.getHibernateLazyInitializer().getPersistentClass()
                 : this.getClass();
         if (thisEffectiveClass != oEffectiveClass) return false;
-        Contacts contact = (Contacts) o;
+        Contact contact = (Contact) o;
         return getId() != null && Objects.equals(getId(), contact.getId());
     }
 

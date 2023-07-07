@@ -15,7 +15,7 @@ import org.springframework.validation.Validator;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class ContactUniqueValidator implements Validator {
+public class ContactUniqueCreateValidator implements Validator {
     private final ContactCreateMapper contactCreateMapper;
     private final EmailRepository emailRepository;
     private final PhoneRepository phoneRepository;

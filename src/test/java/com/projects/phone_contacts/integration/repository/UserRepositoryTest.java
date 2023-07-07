@@ -1,22 +1,15 @@
-package com.course.springstart.integration.repository;
+package com.projects.phone_contacts.integration.repository;
 
 
-import com.course.springstart.database.entity.Role;
-import com.course.springstart.database.entity.User;
-import com.course.springstart.database.repository.UserRepository;
-import com.course.springstart.dto.PersonalInfo2;
-import com.course.springstart.dto.UserFilter;
-import com.course.springstart.integration.IntegrationTestBase;
-import com.course.springstart.integration.annotation.IT;
+import com.projects.phone_contacts.integration.IntegrationTestBase;
+import com.projects.phone_contacts.integration.annotation.IT;
+import com.projects.phone_contacts.model.User;
+import com.projects.phone_contacts.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 
-import java.time.LocalDate;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.List;
 
 @IT
 @RequiredArgsConstructor
@@ -25,90 +18,101 @@ class UserRepositoryTest extends IntegrationTestBase {
     private final UserRepository userRepository;
 
     @Test
-    void checkBatch() {
-        var users = userRepository.findAll();
-        userRepository.updateCompanyAndRole(users);
-        System.out.println();
+    void findByUsername() {
+        List<User> users = userRepository.findAll();
+        Assertions.assertEquals(2, users.size());
+        User user = users.get(0);
+        Assertions.assertEquals("john_doe", user.getUsername());
+        Assertions.assertEquals("ROLE_ADMIN", user.getRole().getCode());
     }
 
     @Test
-    void checkJdbcTemplate() {
-        var users = userRepository.findAllByCompanyIdAndRole(1L, Role.USER);
-        assertThat(users).hasSize(1);
+    void findByUsername2() {
+        List<User> users = userRepository.findAll();
+        Assertions.assertEquals(2, users.size());
+        User user = users.get(1);
+        Assertions.assertEquals("jane_smith", user.getUsername());
+        Assertions.assertEquals("ROLE_USER", user.getRole().getCode());
     }
 
     @Test
-    void checkAuditing() {
-        User ivan = userRepository.findById(1L).orElseThrow();
-        ivan.setBirthDate(ivan.getBirthDate().plusDays(1));
-        userRepository.flush();
-        System.out.println(ivan);
+    void finById() {
+        User user = userRepository.findById(1L).orElseThrow();
+        Assertions.assertEquals("john_doe", user.getUsername());
+        Assertions.assertEquals("ROLE_ADMIN", user.getRole().getCode());
     }
 
     @Test
-    void checkCustomImplementation() {
-        UserFilter filter = new UserFilter(
-                null, "ov", LocalDate.now()
-        );
-        var users = userRepository.findAllByFilter(filter);
-        assertThat(users).hasSize(4);
+    void finById2() {
+        User user = userRepository.findById(2L).orElseThrow();
+        Assertions.assertEquals("jane_smith", user.getUsername());
+        Assertions.assertEquals("ROLE_USER", user.getRole().getCode());
     }
 
     @Test
-    void checkProjections() {
-        var users = userRepository.findAllByCompany_Id(1);
-        for (PersonalInfo2 user : users) {
-            System.out.println(user.getFullName());
-        }
-        assertThat(users).hasSize(2);
+    void update() {
+        User user = userRepository.findById(1L).orElseThrow();
+        user.setUsername("john_doe_updated");
+        userRepository.save(user);
+        User userUpdated = userRepository.findById(1L).orElseThrow();
+        Assertions.assertEquals("john_doe_updated", userUpdated.getUsername());
     }
 
     @Test
-    void checkPageable() {
-        var pageable = PageRequest.of(0, 2, Sort.by("id"));
-        var slice = userRepository.findAllBy(pageable);
-        slice.forEach(user -> System.out.println(user.getCompany().getName()));
-
-        while (slice.hasNext()) {
-            slice = userRepository.findAllBy(slice.nextPageable());
-            slice.forEach(user -> System.out.println(user.getCompany().getName()));
-        }
+    void delete() {
+        User user = userRepository.findById(1L).orElseThrow();
+        userRepository.delete(user);
+        List<User> users = userRepository.findAll();
+        Assertions.assertEquals(1, users.size());
     }
 
     @Test
-    void checkSort() {
-        var sortBy = Sort.sort(User.class);
-        var sort = sortBy.by(User::getFirstname)
-            .and(sortBy.by(User::getLastname));
-
-        var sortById = Sort.by("firstname").and(Sort.by("lastname"));
-        var allUsers = userRepository.findTop3ByBirthDateBefore(LocalDate.now(), sort);
-        assertThat(allUsers).hasSize(3);
+    void save() {
+        User user = User.builder()
+                .username("test")
+                .password("test")
+                .build();
+        userRepository.save(user);
+        List<User> users = userRepository.findAll();
+        Assertions.assertEquals(3, users.size());
     }
 
     @Test
-    void checkFirstTop() {
-        var topUser = userRepository.findTopByOrderByIdDesc();
-        assertTrue(topUser.isPresent());
-        topUser.ifPresent(user -> assertEquals(5L, user.getId()));
+    void count() {
+        long count = userRepository.count();
+        Assertions.assertEquals(2, count);
     }
 
     @Test
-    void checkUpdate() {
-        var ivan = userRepository.getById(1L);
-        assertSame(Role.ADMIN, ivan.getRole());
-        ivan.setBirthDate(LocalDate.now());
-
-        var resultCount = userRepository.updateRole(Role.USER, 1L, 5L);
-        assertEquals(2, resultCount);
-
-        var theSameIvan = userRepository.getById(1L);
-        assertSame(Role.USER, theSameIvan.getRole());
+    void existsById() {
+        Assertions.assertTrue(userRepository.existsById(1L));
     }
 
     @Test
-    void checkQueries() {
-        var users = userRepository.findAllBy("a", "ov");
-        assertThat(users).hasSize(3);
+    void existsById2() {
+        Assertions.assertTrue(userRepository.existsById(2L));
+    }
+
+    @Test
+    void existsById3() {
+        Assertions.assertFalse(userRepository.existsById(3L));
+    }
+
+    @Test
+    void findAll() {
+        List<User> users = userRepository.findAll();
+        Assertions.assertEquals(2, users.size());
+    }
+
+    @Test
+    void findAllById() {
+        List<User> users = userRepository.findAllById(List.of(1L, 2L));
+        Assertions.assertEquals(2, users.size());
+    }
+
+    @Test
+    void findAllById2() {
+        List<User> users = userRepository.findAllById(List.of(1L, 2L, 3L));
+        Assertions.assertEquals(2, users.size());
     }
 }

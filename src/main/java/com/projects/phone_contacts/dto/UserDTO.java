@@ -1,2 +1,6 @@
-package com.projects.phone_contacts.dto;public record UserDTO() {
+package com.projects.phone_contacts.dto;
+
+public record UserDTO(
+        String login
+) {
 }

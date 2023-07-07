@@ -1,4 +1,4 @@
-package com.projects.phone_contacts.jwt;
+package com.projects.phone_contacts.security.jwt;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
