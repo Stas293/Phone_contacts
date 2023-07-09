@@ -42,6 +42,12 @@ public class Contact {
 
     private String imagePath;
 
+    public String getName() {
+        if (middleName == null)
+            return firstName + " " + lastName;
+        return firstName + " " + middleName + " " + lastName;
+    }
+
     @Override
     public final boolean equals(Object o) {
         if (this == o) return true;

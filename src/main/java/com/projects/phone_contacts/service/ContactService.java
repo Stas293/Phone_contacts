@@ -14,14 +14,19 @@ import com.projects.phone_contacts.utility.ExceptionParser;
 import com.projects.phone_contacts.validation.ContactUniqueCreateValidator;
 import com.projects.phone_contacts.validation.ContactUniqueUpdateValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -32,9 +37,11 @@ public class ContactService {
     private final Mapper<ContactCreateUpdateDto, Contact> contactCreateMapper;
     private final Mapper<ContactDeleteDto, Contact> contactDeleteMapper;
     private final Mapper<Contact, ContactReadDto> contactReadMapper;
+    private final Mapper<String, Contact> contactMapper;
     private final UserRepository userRepository;
     private final ContactUniqueCreateValidator contactUniqueCreateValidator;
     private final ContactUniqueUpdateValidator contactUniqueUpdateValidator;
+    private final ImageService imageService;
 
     @Transactional
     public ContactReadDto create(ContactCreateUpdateDto contactCreateUpdateDto, BindingResult errors) {
@@ -61,6 +68,7 @@ public class ContactService {
             throw new ContactDeleteException("Contact not found");
         }
         contactRepository.deleteByFirstNameAndMiddleNameAndLastName(contact.getFirstName(), contact.getMiddleName(), contact.getLastName());
+        imageService.deleteImage(optionalContact.get().getImagePath());
         log.info("Contact deleted: {}", optionalContact.get());
     }
 
@@ -118,5 +126,72 @@ public class ContactService {
             throw new ContactNotFoundException("Contact not found");
         }
         return contactReadMapper.map(optionalContact.get());
+    }
+
+    private void uploadImage(MultipartFile image, Contact contact, String username) {
+        Optional.ofNullable(image)
+                .filter(file -> !file.isEmpty())
+                .ifPresent(file -> saveImage(file, contact, username));
+    }
+
+    @SneakyThrows
+    private void saveImage(MultipartFile file, Contact contact, String username) {
+        imageService.upload(contact, username, file.getOriginalFilename(), file.getInputStream());
+    }
+
+    @Transactional
+    public void deleteImage(ContactDeleteDto contactDeleteDto) {
+        Contact contact = contactDeleteMapper.map(contactDeleteDto);
+        User user = userRepository.findByUsername(
+                SecurityContextHolder.getContext().getAuthentication().getName()
+        ).orElseThrow();
+        Optional<Contact> optionalContact = getContact(contact, user);
+        if (optionalContact.isEmpty()) {
+            throw new ContactDeleteException("Contact not found");
+        }
+        imageService.deleteImage(optionalContact.get().getImagePath());
+        optionalContact.get().setImagePath(null);
+        contactRepository.save(optionalContact.get());
+    }
+
+    @Transactional
+    public void saveImage(String contactName, MultipartFile file) {
+        Pattern pattern = Pattern.compile("^[a-zA-Zа-яА-Я]+(\\s[a-zA-Zа-яА-Я]+){1,2}$");
+        if (!pattern.matcher(contactName).matches()) {
+            throw new ContactNotFoundException("Contact name is not valid");
+        }
+        String name = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(name).orElseThrow();
+        Contact contact = contactMapper.map(contactName);
+        Optional<Contact> optionalContact = getContact(contact, user);
+        if (optionalContact.isEmpty()) {
+            throw new ContactNotFoundException("Contact not found");
+        }
+        uploadImage(file, optionalContact.get(), name);
+        String imagePath = String.format("%s/%s/%s", name, contact.getName(), file.getOriginalFilename());
+        Optional.ofNullable(file)
+                .filter(Predicate.not(MultipartFile::isEmpty))
+                .ifPresent(image -> optionalContact.get().setImagePath(imagePath));
+        contactRepository.save(optionalContact.get());
+    }
+
+    public ByteArrayResource getImage(String contactName) {
+        Pattern pattern = Pattern.compile("^[a-zA-Zа-яА-Я]+(\\s[a-zA-Zа-яА-Я]+){1,2}$");
+        if (!pattern.matcher(contactName).matches()) {
+            throw new ContactNotFoundException("Contact name is not valid");
+        }
+        Contact contact = contactMapper.map(contactName);
+        User user = userRepository.findByUsername(
+                SecurityContextHolder.getContext().getAuthentication().getName()
+        ).orElseThrow();
+        Optional<Contact> optionalContact = getContact(contact, user);
+        if (optionalContact.isEmpty()) {
+            throw new ContactNotFoundException("Contact not found");
+        }
+        if (optionalContact.get().getImagePath() == null) {
+            throw new ContactNotFoundException("Image not found");
+        }
+        Optional<byte[]> image = imageService.getImage(optionalContact.get().getImagePath());
+        return new ByteArrayResource(image.get());
     }
 }

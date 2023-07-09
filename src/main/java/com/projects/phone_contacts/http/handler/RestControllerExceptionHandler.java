@@ -1,6 +1,7 @@
 package com.projects.phone_contacts.http.handler;
 
 import com.projects.phone_contacts.exceptions.ContactDeleteException;
+import com.projects.phone_contacts.exceptions.ContactNotFoundException;
 import com.projects.phone_contacts.exceptions.ContactUpdateException;
 import com.projects.phone_contacts.exceptions.ValidationException;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,12 @@ public class RestControllerExceptionHandler {
     @ExceptionHandler(ContactDeleteException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public String handleContactDeleteException(ContactDeleteException exception) {
+        return exception.getMessage();
+    }
+
+    @ExceptionHandler(ContactNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleContactNotFoundException(ContactNotFoundException exception) {
         return exception.getMessage();
     }
 }
